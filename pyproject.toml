@@ -26,6 +26,8 @@ keywords = ["machine learning", "equivariant", "electronic structure"]
 requires-python = ">=3.7"
 dependencies = [
         "e3nn",
+        "matplotlib",
+        "numpy",
         "pandas",
         "torch",
 ]
