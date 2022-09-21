@@ -38,11 +38,6 @@ You can develop on Windows, GNU/Linux or Mac OS X. You need:
 - [Python 3.6 and above](https://www.python.org/) and a python [**virtual environment**](https://realpython.com/python-virtual-environments-a-primer/).
 - [Git](https://git-scm.com/)
 
-Other considerations:
-
-- If you're running Windows, I highly recommend using [Cmder](https://cmder.net/) as your console emulator. It comes bundled with [Git](https://git-scm.com/), and will be less frustrating than using the default Windows console.
-- I also recommend using [VSCode](https://code.visualstudio.com/) as your editor. Of course you're free to use whatever editor you want!
-
 ### Getting Started
 First, [fork](https://docs.github.com/en/free-pro-team@latest/github/getting-started-with-github/fork-a-repo) this repository, then fire up your command prompt and ...
 

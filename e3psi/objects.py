@@ -21,7 +21,7 @@ class AbstractObj:
 
 
 class IrrepsObj(AbstractObj, argparse.Namespace):
-    """An object that contains irrep attrs (can be e.g. a graph node, or edge)"""
+    """An object that contains irrep attrs (can be e.g. a graph node, edge, or whatever)"""
 
     @property
     def irreps(self) -> o3.Irreps:
@@ -60,6 +60,7 @@ class Attr(AbstractObj):
         return self._irreps
 
     def create_tensor(self, value, dtype=None, device=None) -> torch.Tensor:
+        """Generic version of creating a torch tensor"""
         return torch.tensor(value, dtype=dtype, device=device)
 
 

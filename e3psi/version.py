@@ -7,5 +7,4 @@ __maintainer__ = "Martin Uhrin"
 __email__ = "martin.uhrin.10@ucl.ac.uk"
 __status__ = "Development"
 
-
 __all__ = ("__author__", "__copyright__", "__version__", "__license__")
