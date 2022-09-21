@@ -7,35 +7,36 @@ build-backend = "flit_core.buildapi"
 name = "e3psi"
 dynamic = ["version"]  # read from aiida/__init__.py
 description = "Equivariant machine learning library for learning from electronic structures."
-authors = [{name = "Martin Uhrin", email = "martin.uhrin.10@ucl.ac.uk"}]
+authors = [{ name = "Martin Uhrin", email = "martin.uhrin.10@ucl.ac.uk" }]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
-        "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS :: MacOS X",
-        "Programming Language :: Python",
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        "Topic :: Scientific/Engineering"
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python",
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    "Topic :: Scientific/Engineering"
 ]
 keywords = ["machine learning", "equivariant", "electronic structure"]
 requires-python = ">=3.7"
 dependencies = [
-        "e3nn",
-        "matplotlib",
-        "numpy",
-        "pandas",
-        "torch",
+    "e3nn",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "torch",
 ]
 [project.optional-dependencies]
 dev = [
-  'black[d]',
-  'pre-commit',
-  'pytest',
+    'black[d]',
+    'flit',
+    'pre-commit',
+    'pytest',
 ]
 
 
