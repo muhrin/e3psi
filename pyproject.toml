@@ -63,3 +63,5 @@ exclude = '''
 '''
 [tool.commitizen]
 tag_format = "v$major.$minor.$patch"
+[tool.bandit]
+exclude_dirs = ["tests"]

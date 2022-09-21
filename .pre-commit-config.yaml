@@ -23,6 +23,8 @@ repos:
     rev: 1.7.4
     hooks:
     - id: bandit
+      args: [ "-c", "pyproject.toml" ]
+      additional_dependencies: [ "bandit[toml]" ]
 - repo: https://github.com/commitizen-tools/commitizen
   rev: v2.29.5
   hooks:
