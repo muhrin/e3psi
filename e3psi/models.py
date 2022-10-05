@@ -1,6 +1,10 @@
 import abc
+import uuid
 from typing import Union
 
+import mincepy
+from mincepy_sci import pytorch_types
+import mincepy_sci.pytorch_types
 from e3nn import nn
 from e3nn import o3
 import torch
@@ -10,7 +14,7 @@ from . import graphs
 __all__ = "OnsiteModel", "IntersiteModel", "Model"
 
 
-class Model(torch.nn.Module, abc.ABC):
+class Model(torch.nn.Module, pytorch_types.SavableModuleMixin, abc.ABC):
     @property
     @abc.abstractmethod
     def graph(self) -> graphs.AbstractObj:
@@ -27,6 +31,8 @@ class Model(torch.nn.Module, abc.ABC):
 
 class OnsiteModel(Model):
     """Model for predicting onsite values i.e. a node with self interactions"""
+
+    TYPE_ID = uuid.UUID("d9e278ed-c757-47d5-99da-88e0b3c5ec06")
 
     def __init__(
         self,
@@ -79,6 +85,8 @@ class OnsiteModel(Model):
 class IntersiteModel(Model):
     """Model for predicting intersite values, i.e. a two-body property"""
 
+    TYPE_ID = uuid.UUID("8d3f024e-c9d7-48d0-92e1-88448d483936")
+
     def __init__(
         self,
         graph: graphs.TwoSite,
@@ -94,9 +102,7 @@ class IntersiteModel(Model):
         node_node_tp_irreps_out = (
             o3.Irreps(n1n2_irreps_out)
             if n1n2_irreps_out is not None
-            else o3.FullTensorProduct(
-                self.graph.attrs.site1.irreps, self.graph.attrs.site2.irreps
-            ).irreps_out
+            else o3.FullTensorProduct(self.graph.site1.irreps, self.graph.site2.irreps).irreps_out
         )
 
         self.node_node_tp = o3.FullyConnectedTensorProduct(
@@ -108,7 +114,7 @@ class IntersiteModel(Model):
             o3.Irreps(n1n2e_irreps_out)
             if n1n2e_irreps_out is not None
             else o3.FullTensorProduct(
-                self.node_node_tp.irreps_out, self.graph.attrs.edge.irreps
+                self.node_node_tp.irreps_out, self.graph.edge.irreps
             ).irreps_out
         )
 

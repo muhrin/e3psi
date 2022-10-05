@@ -27,6 +27,7 @@ requires-python = ">=3.7"
 dependencies = [
     "e3nn",
     "matplotlib",
+    "mincepy[sci]",
     "numpy",
     "pandas",
     "torch",
@@ -38,7 +39,8 @@ dev = [
     'pre-commit',
     'pytest',
 ]
-
+[project.entry-points."mincepy.plugins.types"]
+ "e3psi" = "e3psi.provides:get_historian_types"
 
 [tool.black]
 line-length = 100

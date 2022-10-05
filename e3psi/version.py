@@ -2,7 +2,8 @@ __author__ = "Martin Uhrin"
 __copyright__ = "Copyright 2022, Martin Uhrin"
 __license__ = "GPL-3.0-or-later"
 
-__version__ = "0.1.0"
+version_info = (0, 1, 0)
+__version__ = ".".join(map(str, version_info))
 __maintainer__ = "Martin Uhrin"
 __email__ = "martin.uhrin.10@ucl.ac.uk"
 __status__ = "Development"
