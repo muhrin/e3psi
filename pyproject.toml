@@ -38,6 +38,7 @@ dev = [
     'flit',
     'pre-commit',
     'pytest',
+    "pytest-cov",
 ]
 [project.entry-points."mincepy.plugins.types"]
  "e3psi" = "e3psi.provides:get_historian_types"
