@@ -1,5 +1,6 @@
 import abc
 import argparse
+from typing import Iterable
 import uuid
 
 from e3nn import o3
@@ -35,10 +36,7 @@ class IrrepsObj(argparse.Namespace, AbstractObj):
 
     def create_tensor(self, values, dtype=None, device=None) -> torch.Tensor:
         return torch.hstack(
-            tuple(
-                attr.create_tensor(values[key], dtype=dtype, device=device)
-                for key, attr in vars(self).items()
-            )
+            tuple(attr.create_tensor(values[key], dtype=dtype, device=device) for key, attr in vars(self).items())
         )
 
 
@@ -75,7 +73,10 @@ class TwoSiteHelper(IrrepsObjHelper):
     TYPE_ID = uuid.UUID("29f0bcb3-a3dc-43f1-b739-50bec72d4ccc")
 
 
-class Attr(mincepy.SimpleSavable, AbstractObj):
+class Attr(
+    # mincepy.SimpleSavable,
+    AbstractObj
+):
     TYPE_ID = uuid.UUID("8a1832b6-0d11-4fe3-a7c2-5efada06b640")
 
     def __init__(self, irreps) -> None:
@@ -97,7 +98,7 @@ class SpecieOneHot(Attr):
 
     species = mincepy.field()
 
-    def __init__(self, species) -> None:
+    def __init__(self, species: Iterable[str]) -> None:
         self.species = list(species)
         irreps = len(self.species) * o3.Irrep("0e")
         super().__init__(irreps)
