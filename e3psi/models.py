@@ -61,7 +61,7 @@ class OnsiteModel(Model):
         graph: graphs.AbstractObj,
         nn_irreps_out: Union[str, o3.Irreps] = None,
         irreps_out="0e",
-        irrep_normalization="norm",
+        irrep_normalization="component",
         hidden_layers=1,
         rescaler=None,
     ):
@@ -78,7 +78,9 @@ class OnsiteModel(Model):
 
         # First layer
         self.layers = torch.nn.ModuleList(
-            _self_interaction(self.irreps_in, feature_irreps, irrep_normalization=irrep_normalization)
+            _self_interaction(
+                self.irreps_in, feature_irreps, irrep_normalization=irrep_normalization
+            )
         )
 
         if hidden_layers > 1:
@@ -86,13 +88,19 @@ class OnsiteModel(Model):
             for _ in range(hidden_layers - 1):
                 self.layers.extend(
                     _self_interaction(
-                        self.layers[-1].irreps_out, feature_irreps, irrep_normalization=irrep_normalization
+                        self.layers[-1].irreps_out,
+                        feature_irreps,
+                        irrep_normalization=irrep_normalization,
                     )
                 )
 
         # Output
         self.layers.append(
-            o3.TensorSquare(self.layers[-1].irreps_out, irreps_out=irreps_out, irrep_normalization=irrep_normalization)
+            o3.TensorSquare(
+                self.layers[-1].irreps_out,
+                irreps_out=irreps_out,
+                irrep_normalization=irrep_normalization,
+            )
         )
 
         if rescaler is not None:
@@ -155,7 +163,9 @@ class IntersiteModel(Model):
         node_node_edge_tp_irreps_out = (
             o3.Irreps(n1n2e_irreps_out)
             if n1n2e_irreps_out is not None
-            else o3.FullTensorProduct(self.node_node_tp.irreps_out, self.graph.edge.irreps).irreps_out
+            else o3.FullTensorProduct(
+                self.node_node_tp.irreps_out, self.graph.edge.irreps
+            ).irreps_out
         )
 
         self.node_node_edge_tp, gate = _interaction(
@@ -181,7 +191,11 @@ class IntersiteModel(Model):
 
         # Output layer
         self.layers.append(
-            o3.TensorSquare(self.layers[-1].irreps_out, irreps_out=irreps_out, irrep_normalization=irrep_normalization)
+            o3.TensorSquare(
+                self.layers[-1].irreps_out,
+                irreps_out=irreps_out,
+                irrep_normalization=irrep_normalization,
+            )
         )
 
         if rescaler is not None:
@@ -202,24 +216,6 @@ class IntersiteModel(Model):
         return out
 
 
-def _gate_this(irreps_in: o3.Irreps, scalar_split=1.0) -> nn.Gate:
-    total_scalars = sum(mulir.mul for mulir in irreps_in if mulir.ir.l == 0)
-    non_scalars = o3.Irreps(list(mulir for mulir in irreps_in if mulir.ir.l != 0))
-    num_non_scalars = sum(mulir.mul for mulir in non_scalars)
-    num_scalars = total_scalars - num_non_scalars
-
-    if num_scalars <= 0:
-        raise ValueError(f"Don't have enough scalars to gate all non-scalar irreps: {irreps_in}")
-
-    return nn.Gate(
-        irreps_scalars=num_scalars * o3.Irrep("0e"),
-        act_scalars=[torch.nn.functional.silu],
-        irreps_gates=num_non_scalars * o3.Irrep("0e"),
-        act_gates=[torch.sigmoid],
-        irreps_gated=non_scalars,
-    )
-
-
 def _self_interaction(
     irreps_in: o3.Irreps,
     irreps_out=None,
@@ -238,9 +234,9 @@ def _self_interaction(
         additional_scalars = num_non_scalars * o3.Irrep("0e")
         act = nn.Gate(
             irreps_scalars=scalars,
-            act_scalars=[torch.nn.functional.silu],
+            act_scalars=[ACT_SCALARS[ir.p] for _, ir in scalars],
             irreps_gates=additional_scalars,
-            act_gates=[torch.sigmoid],
+            act_gates=[ACT_NON_SCALARS[ir.p] for _, ir in additional_scalars],
             irreps_gated=non_scalars,
         )
         tp_irreps_out = additional_scalars + target_out
@@ -251,7 +247,10 @@ def _self_interaction(
 
     # Now we have the information we need to build the self-interaction
     tp = o3.TensorSquare(
-        irreps_in, irreps_out=tp_irreps_out, filter_ir_out=filter_ir_out, irrep_normalization=irrep_normalization
+        irreps_in,
+        irreps_out=tp_irreps_out,
+        filter_ir_out=filter_ir_out,
+        irrep_normalization=irrep_normalization,
     )
 
     return tp, act
@@ -275,9 +274,9 @@ def _interaction(
         additional_scalars = num_non_scalars * o3.Irrep("0e")
         act = nn.Gate(
             irreps_scalars=scalars,
-            act_scalars=[torch.nn.functional.silu],
+            act_scalars=[ACT_SCALARS[ir.p] for _, ir in scalars],
             irreps_gates=additional_scalars,
-            act_gates=[torch.sigmoid],
+            act_gates=[ACT_NON_SCALARS[ir.p] for _, ir in additional_scalars],
             irreps_gated=non_scalars,
         )
         tp_irreps_out = additional_scalars + target_out
@@ -287,5 +286,17 @@ def _interaction(
         tp_irreps_out = target_out
 
     # Now we have the information we need to build the self-interaction
-    tp = o3.FullyConnectedTensorProduct(irreps_in1, irreps_in2, tp_irreps_out, irrep_normalization=irrep_normalization)
+    tp = o3.FullyConnectedTensorProduct(
+        irreps_in1, irreps_in2, tp_irreps_out, irrep_normalization=irrep_normalization
+    )
     return tp, act
+
+
+ACT_SCALARS = {
+    1: torch.nn.functional.silu,
+    -1: torch.tanh,
+}
+ACT_NON_SCALARS = {
+    1: torch.sigmoid,
+    -1: torch.tanh,
+}
