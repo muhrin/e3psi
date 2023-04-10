@@ -2,13 +2,12 @@ import abc
 import uuid
 from typing import Union, Tuple
 
-import mincepy
 from mincepy_sci import pytorch_types
-import mincepy_sci.pytorch_types
 from e3nn import nn
 from e3nn import o3
 import torch
 
+from . import base
 from . import graphs
 
 __all__ = "OnsiteModel", "IntersiteModel", "Model"
@@ -46,7 +45,7 @@ class Compose(Module):
 class Model(Module, pytorch_types.SavableModuleMixin, abc.ABC):
     @property
     @abc.abstractmethod
-    def graph(self) -> graphs.AbstractObj:
+    def graph(self) -> base.AbstractObj:
         """Get the graph that described this model"""
 
     def __hash__(self):
@@ -58,8 +57,8 @@ class OnsiteModel(Model):
 
     def __init__(
         self,
-        graph: graphs.AbstractObj,
-        nn_irreps_out: Union[str, o3.Irreps] = None,
+        graph: graphs.OneSite,
+        feature_irreps: Union[str, o3.Irreps] = None,
         irreps_out="0e",
         irrep_normalization="component",
         hidden_layers=1,
@@ -68,11 +67,10 @@ class OnsiteModel(Model):
         super().__init__()
 
         self._graph = graph
-        # self.irreps_in = o3.Irrep('0e') + self._graph.irreps
-        self.irreps_in = self._graph.irreps
+        self.irreps_in = self._graph.site.irreps
         feature_irreps = (
-            o3.Irreps(nn_irreps_out)
-            if nn_irreps_out is not None
+            o3.Irreps(feature_irreps)
+            if feature_irreps is not None
             else o3.ReducedTensorProducts("ij=ji", i=self.irreps_in).irreps_out
         )
 
@@ -133,8 +131,7 @@ class IntersiteModel(Model):
     def __init__(
         self,
         graph: graphs.TwoSite,
-        n1n2_irreps_out=None,
-        n1n2e_irreps_out=None,
+        node_features=None,
         irreps_out="0e",
         hidden_layers=1,
         irrep_normalization="component",
@@ -146,8 +143,8 @@ class IntersiteModel(Model):
 
         # Node-node TP
         node_node_tp_irreps_out = (
-            o3.Irreps(n1n2_irreps_out)
-            if n1n2_irreps_out is not None
+            o3.Irreps(node_features)
+            if node_features is not None
             else o3.FullTensorProduct(self.graph.site1.irreps, self.graph.site2.irreps).irreps_out
         )
 
@@ -161,8 +158,8 @@ class IntersiteModel(Model):
 
         # Node-node output * edge TP
         node_node_edge_tp_irreps_out = (
-            o3.Irreps(n1n2e_irreps_out)
-            if n1n2e_irreps_out is not None
+            o3.Irreps(node_features)
+            if node_features is not None
             else o3.FullTensorProduct(
                 self.node_node_tp.irreps_out, self.graph.edge.irreps
             ).irreps_out
@@ -181,7 +178,7 @@ class IntersiteModel(Model):
         if hidden_layers > 1:
             # Intermediate hidden
             for _ in range(hidden_layers - 1):
-                self.layers.append(
+                self.layers.extend(
                     _self_interaction(
                         self.layers[-1].irreps_out,
                         irreps_out=node_node_edge_tp_irreps_out,

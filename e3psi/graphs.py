@@ -7,63 +7,24 @@ from e3nn import o3
 import mincepy
 import torch
 
-__all__ = "AbstractObj", "IrrepsObj", "Attr", "SpecieOneHot", "OccuMtx", "TwoSite"
+from . import base
+
+__all__ = "SpecieOneHot", "OccuMtx", "TwoSite"
 
 
-class AbstractObj:
-    """An object that can create tensors whose values transform according to a set of irreps"""
+class OneSite:
+    """Graph for a single (onsite) dataset"""
 
-    @property
-    @abc.abstractmethod
-    def irreps(self) -> o3.Irreps:
-        """Get the attribute irreps"""
-
-    @abc.abstractmethod
-    def create_tensor(self, value, dtype=None, device=None) -> torch.Tensor:
-        """Create an irrep tensor"""
+    def __init__(self, site: base.IrrepsObj):
+        self.site = site
 
 
-class IrrepsObj(argparse.Namespace, AbstractObj):
-    """An object that contains irrep attrs (can be e.g. a graph node, or edge)"""
-
-    @property
-    def irreps(self) -> o3.Irreps:
-        ir = None
-        for val in vars(self).values():
-            ir = val.irreps if ir is None else ir + val.irreps
-        # return sum(list(val.irreps for val in vars(self.attrs).values()))
-        return ir
-
-    def create_tensor(self, values, dtype=None, device=None) -> torch.Tensor:
-        return torch.hstack(
-            tuple(
-                attr.create_tensor(values[key], dtype=dtype, device=device)
-                for key, attr in vars(self).items()
-            )
-        )
-
-
-class IrrepsObjHelper(mincepy.BaseHelper):
-    TYPE = IrrepsObj
-    TYPE_ID = uuid.UUID("f8cd9a74-07d4-4a5e-9ed0-1bddfdcb94a4")
-
-    def yield_hashables(self, obj: IrrepsObj, hasher):
-        yield from hasher.yield_hashables(obj.__dict__)
-
-    def save_instance_state(self, obj: IrrepsObj, _saver):
-        return obj.__dict__
-
-    def load_instance_state(self, obj: IrrepsObj, saved_state, _loader):
-        for key, value in saved_state.items():
-            setattr(obj, key, value)
-
-
-class TwoSite(IrrepsObj):
+class TwoSite:
     """A two site graph, useful for modelling two sites interacting with optional edge attributes"""
 
-    TYPE_ID = uuid.UUID("576b54de-6708-415e-9860-886a4f93adac")
-
-    def __init__(self, site1: IrrepsObj, site2: IrrepsObj, edge: IrrepsObj = None) -> None:
+    def __init__(
+        self, site1: base.IrrepsObj, site2: base.IrrepsObj, edge: base.IrrepsObj = None
+    ) -> None:
         super().__init__()
         self.site1 = site1
         self.site2 = site2
@@ -71,27 +32,7 @@ class TwoSite(IrrepsObj):
             self.edge = edge
 
 
-class TwoSiteHelper(IrrepsObjHelper):
-    TYPE = TwoSite
-    TYPE_ID = uuid.UUID("29f0bcb3-a3dc-43f1-b739-50bec72d4ccc")
-
-
-class Attr(mincepy.BaseSavableObject, AbstractObj):
-    TYPE_ID = uuid.UUID("8a1832b6-0d11-4fe3-a7c2-5efada06b640")
-
-    def __init__(self, irreps) -> None:
-        super().__init__()
-        self._irreps = o3.Irreps(irreps)
-
-    @mincepy.field(attr="_irreps")
-    def irreps(self) -> o3.Irreps:
-        return self._irreps
-
-    def create_tensor(self, value, dtype=None, device=None) -> torch.Tensor:
-        return torch.tensor(value, dtype=dtype, device=device)
-
-
-class SpecieOneHot(Attr):
+class SpecieOneHot(base.Attr):
     """Standard species one-hot encoding (direct sum of scalars)"""
 
     TYPE_ID = uuid.UUID("e4622421-e6cf-4ac3-89fe-9d967179e432")
@@ -104,26 +45,57 @@ class SpecieOneHot(Attr):
         super().__init__(irreps)
 
     def create_tensor(self, specie, dtype=None, device=None) -> torch.Tensor:
-        tens = torch.zeros(len(self.species), dtype=dtype, device=device)
+        tens = torch.zeros(
+            len(self.species), dtype=dtype or torch.get_default_dtype(), device=device
+        )
         tens[self.species.index(specie)] = 1
         return tens
 
 
-class OccuMtx(Attr):
+class OccuMtx(base.Attr):
     """Occupation matrix that will be represented as a direct sum of irreps"""
 
     TYPE_ID = uuid.UUID("50333915-35a4-48d0-ae52-531db72dee98")
 
     tp = mincepy.field()
+    _tsq = None
 
     def __init__(self, orbital_irrep) -> None:
         self.tp = o3.ReducedTensorProducts("ij=ji", i=orbital_irrep)
         super().__init__(self.tp.irreps_out)
 
-    def create_tensor(self, occ_mtx, dtype=None, device=None):
-        occ = torch.tensor(occ_mtx, dtype=dtype, device=device)
+    def create_tensor(self, occ_mtx, dtype=None, device=None) -> torch.Tensor:
+        occ = torch.tensor(occ_mtx, dtype=dtype or torch.get_default_dtype(), device=device)
         cob = self.tp.change_of_basis.to(dtype=dtype, device=device)
         return torch.einsum("zij,ij->z", cob, occ)
 
+    def dist_euclidian(self, occs1, occs2) -> float:
+        """Get the Euclidian distance between two occupation matrices"""
+        return ((occs1 - occs2) ** 2).mean() ** 0.5
 
-HISTORIAN_TYPES = (IrrepsObjHelper, TwoSiteHelper)
+    def dist_cosine(self, occs1, occs2) -> float:
+        """Get the cosine distance between the irrep vectors of the two occupation matrices"""
+        occs1, occs2 = map(self.create_tensor, (occs1, occs2))
+        return (
+            1.0
+            - (
+                (occs1 * occs2).sum() / ((occs1 * occs1).sum() * (occs2 * occs2).sum()) ** 0.5
+            ).item()
+        )
+
+    def dist_trace(self, occs1, occs2) -> float:
+        """Get the distance that is the abs of the difference between the trace"""
+        return abs(occs1.trace() - occs2.trace())
+
+    def power_spectrum(self, occs):
+        # Change basis to irrep basis
+        if self._tsq is None:
+            self._tsq = o3.TensorSquare(self.tp.irreps_out, filter_ir_out=["0e"])
+        return self._tsq(self.create_tensor(occs))
+
+    def dist_power_spectrum(self, occs1, occs2) -> float:
+        # Calculate the power spectra
+        occs1_ps = self.power_spectrum(occs1)
+        occs2_ps = self.power_spectrum(occs2)
+        # Take the RMSE between the two
+        return torch.mean((occs1_ps - occs2_ps) ** 2).item() ** 0.5
