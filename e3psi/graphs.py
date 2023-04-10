@@ -9,7 +9,7 @@ import torch
 
 from . import base
 
-__all__ = "SpecieOneHot", "OccuMtx", "TwoSite"
+__all__ = "SpecieOneHot", "OccuMtx", "OneSite", "TwoSite"
 
 
 class OneSite:
@@ -18,9 +18,14 @@ class OneSite:
     def __init__(self, site: base.IrrepsObj):
         self.site = site
 
+    def __eq__(self, other: "OneSite"):
+        return self.site == other.site
+
 
 class TwoSite:
     """A two site graph, useful for modelling two sites interacting with optional edge attributes"""
+
+    edge = None
 
     def __init__(
         self, site1: base.IrrepsObj, site2: base.IrrepsObj, edge: base.IrrepsObj = None
@@ -30,6 +35,9 @@ class TwoSite:
         self.site2 = site2
         if edge:
             self.edge = edge
+
+    def __eq__(self, other: "TwoSite"):
+        return self.site1 == other.site1 and self.site2 == other.site2 and self.edge == other.edge
 
 
 class SpecieOneHot(base.Attr):

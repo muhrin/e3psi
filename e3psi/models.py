@@ -64,10 +64,14 @@ class OnsiteModel(Model):
         hidden_layers=1,
         rescaler=None,
     ):
+        if not isinstance(graph, graphs.OneSite):
+            raise ValueError(
+                f"Expected '{graphs.OneSite.__name__}' instance, got '{graph.__class__.__name__}'"
+            )
         super().__init__()
 
         self._graph = graph
-        self.irreps_in = self._graph.site.irreps
+        self.irreps_in = base.irreps(self._graph.site)
         feature_irreps = (
             o3.Irreps(feature_irreps)
             if feature_irreps is not None

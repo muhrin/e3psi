@@ -20,14 +20,21 @@ class IrrepsObjHelper(mincepy.BaseHelper):
             setattr(obj, key, value)
 
 
-class AttrHelper(mincepy.BaseHelper):
+class AttrHelper(mincepy.TypeHelper):
     TYPE = base.Attr
     TYPE_ID = uuid.UUID("8a1832b6-0d11-4fe3-a7c2-5efada06b640")
 
     irreps = mincepy.field(attr="_irreps")
 
 
-class TwoSiteHelper(mincepy.BaseHelper):
+class OneSiteHelper(mincepy.TypeHelper):
+    TYPE = graphs.OneSite
+    TYPE_ID = uuid.UUID("ddbb8d73-1602-4afd-8dda-d231bebf1220")
+
+    site = mincepy.field(attr="site")
+
+
+class TwoSiteHelper(mincepy.TypeHelper):
     TYPE = graphs.TwoSite
     TYPE_ID = uuid.UUID("29f0bcb3-a3dc-43f1-b739-50bec72d4ccc")
 
@@ -36,4 +43,4 @@ class TwoSiteHelper(mincepy.BaseHelper):
     edge = mincepy.field(attr="edge", default=None)
 
 
-HISTORIAN_TYPES = IrrepsObjHelper, AttrHelper, TwoSiteHelper
+HISTORIAN_TYPES = IrrepsObjHelper, AttrHelper, OneSiteHelper, TwoSiteHelper

@@ -13,9 +13,10 @@ from mincepy.testing import historian, mongodb_archive, archive_uri
 def test_onsite_save_load(historian: mincepy.Historian):  # noqa: F811
     # Build the model
     site = e3psi.IrrepsObj(species=e3psi.Attr("4x0e"), pos=e3psi.Attr("1e"))
+    graph = e3psi.OneSite(site)
 
     torch.manual_seed(0)
-    model = e3psi.OnsiteModel(site)
+    model = e3psi.OnsiteModel(graph)
 
     # Create random inputs
     data = dict(site=site.irreps.randn(-1))
@@ -23,10 +24,10 @@ def test_onsite_save_load(historian: mincepy.Historian):  # noqa: F811
 
     # Save/load a new model
     torch.manual_seed(0)
-    loaded = testing.do_round_trip(historian, e3psi.OnsiteModel, site)
+    loaded = testing.do_round_trip(historian, e3psi.OnsiteModel, graph)
 
     # Check that all agrees
-    assert loaded.graph == site
+    assert loaded.graph.site == graph.site
     assert torch.allclose(ref_out, loaded(data))
 
 
