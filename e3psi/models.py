@@ -114,12 +114,6 @@ class OnsiteModel(Model):
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         out = inputs["site"]
-        # if len(out.shape) == 2:
-        #     one = torch.ones(out.shape[0], 1, dtype=out.dtype, device=out.device)
-        # else:
-        #     one = torch.ones(1, dtype=out.dtype, device=out.device)
-        #
-        # out = torch.hstack((one, out))
 
         for layer in self.layers:
             out = layer(out)
@@ -141,6 +135,10 @@ class IntersiteModel(Model):
         irrep_normalization="component",
         rescaler=None,
     ):
+        if not isinstance(graph, graphs.TwoSite):
+            raise ValueError(
+                f"Expected '{graphs.TwoSite.__name__}' instance, got '{graph.__class__.__name__}'"
+            )
         super().__init__()
         self._graph = graph
         self.layers = torch.nn.ModuleList()
@@ -149,13 +147,15 @@ class IntersiteModel(Model):
         node_node_tp_irreps_out = (
             o3.Irreps(node_features)
             if node_features is not None
-            else o3.FullTensorProduct(self.graph.site1.irreps, self.graph.site2.irreps).irreps_out
+            else o3.FullTensorProduct(
+                base.irreps(self.graph.site1), base.irreps(self.graph.site2)
+            ).irreps_out
         )
 
         # Input layers
         self.node_node_tp = o3.FullyConnectedTensorProduct(
-            self.graph.site1.irreps,
-            self.graph.site2.irreps,
+            base.irreps(self.graph.site1),
+            base.irreps(self.graph.site2),
             irreps_out=node_node_tp_irreps_out,
             irrep_normalization="component",
         )
