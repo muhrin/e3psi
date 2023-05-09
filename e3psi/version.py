@@ -1,6 +1,6 @@
 __author__ = "Martin Uhrin"
 __copyright__ = "Copyright 2022, Martin Uhrin"
-__license__ = "GPL-3.0-or-later"
+__license__ = "LGPL-3.0-or-later"
 
 version_info = (0, 3, 0)
 __version__ = ".".join(map(str, version_info))
