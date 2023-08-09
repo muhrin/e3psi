@@ -129,7 +129,7 @@ class IntersiteModel(Model):
     def __init__(
         self,
         graph: graphs.TwoSite,
-        node_features=None,
+        feature_irreps=None,
         irreps_out="0e",
         hidden_layers=1,
         irrep_normalization="component",
@@ -145,8 +145,8 @@ class IntersiteModel(Model):
 
         # Node-node TP
         node_node_tp_irreps_out = (
-            o3.Irreps(node_features)
-            if node_features is not None
+            o3.Irreps(feature_irreps)
+            if feature_irreps is not None
             else o3.FullTensorProduct(
                 base.irreps(self.graph.site1), base.irreps(self.graph.site2)
             ).irreps_out
@@ -162,8 +162,8 @@ class IntersiteModel(Model):
 
         # Node-node output * edge TP
         node_node_edge_tp_irreps_out = (
-            o3.Irreps(node_features)
-            if node_features is not None
+            o3.Irreps(feature_irreps)
+            if feature_irreps is not None
             else o3.FullTensorProduct(
                 self.node_node_tp.irreps_out, self.graph.edge.irreps
             ).irreps_out

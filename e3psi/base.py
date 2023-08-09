@@ -9,7 +9,7 @@ import torch
 
 import mincepy
 
-__all__ = "AbstractObj", "Attr", "IrrepsObj", "irreps", "create_tensor"
+__all__ = "AbstractObj", "Attr", "IrrepsObj", "irreps", "create_tensor", "tensorial_attrs"
 
 
 class AbstractObj:
@@ -37,6 +37,7 @@ class Attr(mincepy.BaseSavableObject, AbstractObj):
         return self._irreps
 
     def create_tensor(self, value, dtype=None, device=None) -> torch.Tensor:
+        """Default implementation: creates torch tensor from the passed value"""
         return torch.tensor(value, dtype=dtype, device=device)
 
 
@@ -52,20 +53,20 @@ class IrrepsObj(argparse.Namespace, AbstractObj):
             try:
                 ir = val.irreps if ir is None else ir + val.irreps
             except AttributeError:
-                raise AttributeError(f"Failed to get irreps for {name}")
+                raise AttributeError(f"Failed to get irreps for '{name}'")
         # return sum(list(val.irreps for val in vars(self.attrs).values()))
         return ir
 
     def create_tensor(self, values, dtype=None, device=None) -> torch.Tensor:
         tensors = tuple(
-            attr.create_tensor(values[key], dtype=dtype, device=device)
+            create_tensor(attr, values[key], dtype=dtype, device=device)
             for key, attr in vars(self).items()
             if not key.startswith("_")
         )
         return torch.hstack(tensors)
 
 
-Tensorial = Union[Attr, IrrepsObj, o3.Irreps, str, dict]
+Tensorial = Union[Attr, IrrepsObj, o3.Irrep, o3.Irreps, str, dict]
 ValueType = Union[torch.Tensor, Mapping[str, Any]]
 
 
@@ -81,7 +82,9 @@ def _(irreps_obj: IrrepsObj) -> o3.Irreps:
 
     for name, val in tensorial_attrs(irreps_obj).items():
         try:
-            total_irreps = val.irreps if total_irreps is None else total_irreps + val.irreps
+            val_irreps = irreps(val)
+            # Concatenate
+            total_irreps = val_irreps if total_irreps is None else total_irreps + val_irreps
         except AttributeError as exc:
             raise AttributeError(f"Failed to get irreps for {name}") from exc
 
@@ -102,6 +105,12 @@ def _(tensorial: o3.Irreps) -> o3.Irreps:
 def _(tensorial: dict) -> o3.Irreps:
     """Irreps from a dictionary that only contains tensorial values"""
     return o3.Irreps("+".join([str(irreps(value)) for value in tensorial.values()]))
+
+
+@irreps.register
+def _(tensorial: o3.Irrep) -> o3.Irreps:
+    """Convert an irrep into irreps"""
+    return o3.Irreps([tensorial])
 
 
 @functools.singledispatch
@@ -142,6 +151,16 @@ def _(tensorial: dict, value: Mapping, dtype=None, device=None) -> torch.Tensor:
 @create_tensor.register
 def _(attr: Attr, value, dtype=None, device=None) -> torch.Tensor:
     return attr.create_tensor(value, dtype=dtype, device=device)
+
+
+@create_tensor.register
+def _(_tensorial: o3.Irrep, value, dtype=None, device=None) -> torch.Tensor:
+    value = torch.as_tensor(value, dtype=dtype, device=device)
+    if not _tensorial.dim == torch.numel(value):
+        raise ValueError(
+            f"Irreps dimension ({_tensorial}) and value dimensions ({value.dim()}) do not match."
+        )
+    return value
 
 
 def tensorial_attrs(irreps_obj: IrrepsObj) -> Dict[str, Tensorial]:
