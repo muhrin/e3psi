@@ -1,8 +1,6 @@
 from typing import Iterable
-import uuid
 
 from e3nn import o3
-import mincepy
 import torch
 
 from . import base
@@ -41,10 +39,6 @@ class TwoSite:
 class SpecieOneHot(base.Attr):
     """Standard species one-hot encoding (direct sum of scalars)"""
 
-    TYPE_ID = uuid.UUID("e4622421-e6cf-4ac3-89fe-9d967179e432")
-
-    species = mincepy.field()
-
     def __init__(self, species: Iterable[str]) -> None:
         self.species = list(species)
         irreps = len(self.species) * o3.Irrep("0e")
@@ -61,9 +55,6 @@ class SpecieOneHot(base.Attr):
 class OccuMtx(base.Attr):
     """Occupation matrix that will be represented as a direct sum of irreps"""
 
-    TYPE_ID = uuid.UUID("50333915-35a4-48d0-ae52-531db72dee98")
-
-    tp = mincepy.field()
     _tsq = None
 
     def __init__(self, orbital_irrep) -> None:

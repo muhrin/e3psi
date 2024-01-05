@@ -2,7 +2,6 @@ import abc
 import argparse
 import functools
 from typing import Union, Dict, Mapping, Any
-import uuid
 
 from e3nn import o3
 import torch
@@ -24,8 +23,6 @@ class AbstractObj:
 
 
 class Attr(AbstractObj):
-    TYPE_ID = uuid.UUID("8a1832b6-0d11-4fe3-a7c2-5efada06b640")
-
     def __init__(self, irreps) -> None:
         super().__init__()
         self._irreps = o3.Irreps(irreps)
@@ -37,6 +34,12 @@ class Attr(AbstractObj):
     def create_tensor(self, value, dtype=None, device=None) -> torch.Tensor:
         """Default implementation: creates torch tensor from the passed value"""
         return torch.tensor(value, dtype=dtype, device=device)
+
+    def __eq__(self, other: Union[Any, "Attr"]) -> bool:
+        if not isinstance(other, Attr):
+            return False
+
+        return self._irreps == other._irreps
 
 
 class IrrepsObj(argparse.Namespace, AbstractObj):
@@ -62,6 +65,12 @@ class IrrepsObj(argparse.Namespace, AbstractObj):
             if not key.startswith("_")
         )
         return torch.hstack(tensors)
+
+    def __eq__(self, other: Union[Any, "IrrepsObj"]) -> bool:
+        if not isinstance(other, IrrepsObj):
+            return False
+
+        return vars(self) == vars(other)
 
 
 Tensorial = Union[Attr, IrrepsObj, o3.Irrep, o3.Irreps, str, dict]

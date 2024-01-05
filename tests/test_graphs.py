@@ -45,8 +45,8 @@ def test_irreps_obj_save_load(historian: mincepy.Historian):  # noqa: F811
     kwargs = {"species": e3psi.Attr("4x0e"), "pos": e3psi.Attr("1e")}
     loaded = testing.do_round_trip(historian, e3psi.IrrepsObj, **kwargs)
 
-    assert loaded.species == kwargs["species"]
-    assert loaded.pos == kwargs["pos"]
+    assert historian.eq(loaded.species, kwargs["species"])
+    assert historian.eq(loaded.pos, kwargs["pos"])
 
 
 def test_occu_mtx_save_load(historian: mincepy.Historian):  # noqa: F811
@@ -65,5 +65,5 @@ def test_two_site_save_load(historian: mincepy.Historian):  # noqa: F811
 
     loaded = testing.do_round_trip(historian, e3psi.TwoSite, site1, site2)
 
-    assert loaded.site1 == site1
-    assert loaded.site2 == site2
+    assert historian.eq(loaded.site1, site1)
+    assert historian.eq(loaded.site2, site2)

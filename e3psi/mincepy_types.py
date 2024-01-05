@@ -43,4 +43,25 @@ class TwoSiteHelper(mincepy.TypeHelper):
     edge = mincepy.field(attr="edge", default=None)
 
 
-HISTORIAN_TYPES = IrrepsObjHelper, AttrHelper, OneSiteHelper, TwoSiteHelper
+class SpeciesOneHotHelper(AttrHelper):
+    TYPE = graphs.SpecieOneHot
+    TYPE_ID = uuid.UUID("e4622421-e6cf-4ac3-89fe-9d967179e432")
+
+    species = mincepy.field()
+
+
+class OccuMtxHelper(AttrHelper):
+    TYPE = graphs.OccuMtx
+    TYPE_ID = uuid.UUID("50333915-35a4-48d0-ae52-531db72dee98")
+
+    tp = mincepy.field()
+
+
+HISTORIAN_TYPES = (
+    IrrepsObjHelper,
+    AttrHelper,
+    OneSiteHelper,
+    TwoSiteHelper,
+    SpeciesOneHotHelper,
+    OccuMtxHelper,
+)
