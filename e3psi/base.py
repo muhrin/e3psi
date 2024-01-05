@@ -1,13 +1,11 @@
 import abc
 import argparse
 import functools
-from typing import Type, Union, Dict, Mapping, Any
+from typing import Union, Dict, Mapping, Any
 import uuid
 
 from e3nn import o3
 import torch
-
-import mincepy
 
 __all__ = "AbstractObj", "Attr", "IrrepsObj", "irreps", "create_tensor", "tensorial_attrs"
 
@@ -25,7 +23,7 @@ class AbstractObj:
         """Create an irrep tensor"""
 
 
-class Attr(mincepy.BaseSavableObject, AbstractObj):
+class Attr(AbstractObj):
     TYPE_ID = uuid.UUID("8a1832b6-0d11-4fe3-a7c2-5efada06b640")
 
     def __init__(self, irreps) -> None:
